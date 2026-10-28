@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comic Reader</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #121212; color: #ffffff; font-family: sans-serif; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Navigation Controls */
+        header { background-color: #1e1e1e; padding: 15px; display: flex; justify-content: center; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        button, select { background-color: #333; color: white; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background-color: #444; }
+        
+        /* Reader Workspace */
+        #viewer-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; overflow-x: auto; }
+        
+        /* Paged View Layout */
+        .mode-paged img { max-height: 85vh; max-width: 100%; object-fit: contain; display: block; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        
+        /* Webtoon (Vertical Strip) Layout */
+        .mode-webtoon { flex-direction: column; width: 100%; max-width: 800px; margin: 0 auto; padding: 0; }
+        .mode-webtoon img { width: 100%; display: block; max-height: none; box-shadow: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <select id="mode-select">
+            <option value="ltr">Page View (Left-to-Right)</option>
+            <option value="rtl">Manga View (Right-to-Left)</option>
+            <option value="webtoon">Webtoon View (Long Strip)</option>
+        </select>
+        <div id="paged-controls">
+            <button id="prev-btn">Prev</button>
+            <span id="page-indicator">Page 1 / 1</span>
+            <button id="next-btn">Next</button>
+        </div>
+    </header>
+
+    <div id="viewer-container" class="mode-paged">
+        <!-- Images will dynamically load here -->
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // List every file name in your chapter folder in order
+        const mangaPages = [
+            'chapter1/01.png',
+            'chapter1/02.png',
+            'chapter1/03.png',
+            'chapter1/04.png'
+        ];
+
+        let currentIndex = 0;
+        let currentMode = 'ltr';
+
+        const container = document.getElementById('viewer-container');
+        const modeSelect = document.getElementById('mode-select');
+        const pagedControls = document.getElementById('paged-controls');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const pageIndicator = document.getElementById('page-indicator');
+
+        // Render Reader Layout based on selection
+        function renderReader() {
+            container.innerHTML = ''; // Clear container
+            
+            if (currentMode === 'webtoon') {
+                // Vertical strip layout: render all images at once
+                pagedControls.style.display = 'none';
+                container.className = 'mode-webtoon';
+                
+                mangaPages.forEach(src => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.loading = 'lazy'; // Optimizes page loading speeds
+                    container.appendChild(img);
+                });
+            } else {
+                // Book/Manga layout: render one page at a time
+                pagedControls.style.display = 'block';
+                container.className = 'mode-paged';
+                
+                const img = document.createElement('img');
+                img.src = mangaPages[currentIndex];
+                container.appendChild(img);
+                
+                pageIndicator.textContent = `Page ${currentIndex + 1} / ${mangaPages.length}`;
+            }
+        }
+
+        // Navigation actions
+        function nextPage() {
+            if (currentMode === 'rtl') {
+                if (currentIndex > 0) { currentIndex--; renderReader(); }
+            } else {
+                if (currentIndex < mangaPages.length - 1) { currentIndex++; renderReader(); }
+            }
+        }
+
+        function prevPage() {
+            if (currentMode === 'rtl') {
+                if (currentIndex < mangaPages.length - 1) { currentIndex++; renderReader(); }
+            } else {
+                if (currentIndex > 0) { currentIndex--; renderReader(); }
+            }
+        }
+
+        // Event Listeners
+        modeSelect.addEventListener('change', (e) => {
+            currentMode = e.target.value;
+            // When switching to Right-to-Left manga mode, start from the first page index rule
+            if (currentMode === 'rtl' && currentIndex === 0) {
+                currentIndex = 0; 
+            }
+            renderReader();
+        });
+
+        nextBtn.addEventListener('click', nextPage);
+        prevBtn.addEventListener('click', prevPage);
+
+        // Optional keyboard bindings (Left/Right Arrow keys)
+        document.addEventListener('keydown', (e) => {
+            if (currentMode !== 'webtoon') {
+                if (e.key === 'ArrowRight') nextPage();
+                if (e.key === 'ArrowLeft') prevPage();
+            }
+        });
+
+        // Initialize display
+        renderReader();
+    </script>
+</body>
+</html>
